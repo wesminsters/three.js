@@ -31142,13 +31142,13 @@ THREE.ShadowMapPlugin = function ( ) {
 				}
 
 			}
+            var clearColor = _renderer.getClearColor(),
+                clearAlpha = _renderer.getClearAlpha();
 
-		}
+        }
+
 
 		// restore GL state
-
-		var clearColor = _renderer.getClearColor(),
-		clearAlpha = _renderer.getClearAlpha();
 
 		_gl.clearColor( clearColor.r, clearColor.g, clearColor.b, clearAlpha );
 		_gl.enable( _gl.BLEND );
