@@ -41,7 +41,6 @@
                 _thisMove.y = _thisMoveDelta.y - _lastMoveDelta.y;
             }
 
-
             $.each(map._tiles, function(index, tile) {
                 tile.position.x += _thisMove.x;
                 tile.position.y += _thisMove.y;
@@ -58,21 +57,15 @@
         if ( intersects.length > 0 ) {
 
             if ( _intersected != intersects[ 0 ].object ) {
-
-
                 _intersected = intersects[ 0 ].object;
-
                 map._plane.position.copy( _intersected.position );
-
             }
 
             map._options.$container[0].style.cursor = 'pointer';
 
         } else {
 
-
             _intersected = null;
-
             map._options.$container[0].style.cursor = 'auto';
 
         }
@@ -106,7 +99,6 @@
 
         }
 
-
     });
 
     $.subscribe(WXC.topics.MOUSE_UP, function($e, args){
@@ -119,10 +111,7 @@
         _thisMove = null;
 
         if ( _intersected ) {
-
-
             _selected = null;
-
         }
 
         map._options.$container[0].style.cursor = 'auto';
