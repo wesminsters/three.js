@@ -6,8 +6,10 @@
 
     var scripts = [
         "../../../../build/Three.js",
+        "core/Utility.js",
         "core/WXC.js",
         "core/Browser.js",
+        "core/MapMove.js",
         "map/Map.js"
     ];
 
