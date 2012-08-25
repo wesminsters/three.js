@@ -9,7 +9,9 @@
         "core/Utility.js",
         "core/WXC.js",
         "core/Browser.js",
-        "core/MapMove.js",
+        "map/MapMove.js",
+        "map/TileLayer.js",
+        "map/Tile.js",
         "map/Map.js"
     ];
 

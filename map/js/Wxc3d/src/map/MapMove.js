@@ -28,7 +28,7 @@
 
         if ( _selected ) {
 
-            var intersects = ray.intersectObject( map._plane );
+            var intersects = ray.intersectObject( map._base );
             if (!intersects[0]) { return; }
 
             _thisMoveDelta = intersects[ 0 ].point.subSelf( _offset );
@@ -41,9 +41,9 @@
                 _thisMove.y = _thisMoveDelta.y - _lastMoveDelta.y;
             }
 
-            $.each(map._tiles, function(index, tile) {
-                tile.position.x += _thisMove.x;
-                tile.position.y += _thisMove.y;
+            $.publish(WXC.topics.MAP_MOVE, {
+                "map":map,
+                "xy": _thisMove
             });
 
             _lastMoveDelta = _thisMoveDelta;
@@ -52,13 +52,13 @@
 
         }
 
-        var intersects = ray.intersectObjects( map._objects );
+        var intersects = ray.intersectObject( map._base );
 
         if ( intersects.length > 0 ) {
 
             if ( _intersected != intersects[ 0 ].object ) {
                 _intersected = intersects[ 0 ].object;
-                map._plane.position.copy( _intersected.position );
+                map._base.position.copy( _intersected.position );
             }
 
             map._options.$container[0].style.cursor = 'pointer';
@@ -86,14 +86,14 @@
 
         var ray = new THREE.Ray( map._camera.position, vector.subSelf( map._camera.position ).normalize() );
 
-        var intersects = ray.intersectObjects( map._objects );
+        var intersects = ray.intersectObject( map._base );
 
         if ( intersects.length > 0 ) {
 
             _selected = intersects[ 0 ].object;
 
-            var intersects = ray.intersectObject( map._plane );
-            _offset.copy( intersects[ 0 ].point ).subSelf( map._plane.position );
+            var intersects = ray.intersectObject( map._base );
+            _offset.copy( intersects[ 0 ].point ).subSelf( map._base.position );
 
             map._options.$container[0].style.cursor = 'move';
 

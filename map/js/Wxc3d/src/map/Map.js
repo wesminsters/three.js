@@ -12,13 +12,12 @@
             "bgColor": "0x000000"
         }, options);
 
-        _context._renderer = null,
+        _context._renderer = null;
         _context._camera = null;
         _context._scene = null;
         _context._projector = null;
-        _context._plane = null;
-        _context._objects = [];
-        _context._tiles = [];
+        _context._base = null;
+        _context._tileLayers = [];
 
         initScene();
         initEventPublishers();
@@ -57,19 +56,12 @@
             _context._scene = new THREE.Scene();
             _context._scene.add(_context._camera);
 
-            var img = new THREE.MeshBasicMaterial({ //CHANGED to MeshBasicMaterial
-                map:THREE.ImageUtils.loadTexture('http://ecn.t0.tiles.virtualearth.net/tiles/h02313010.jpeg?g=401')
-            });
-            img.map.needsUpdate = true; //ADDED
-
-
             // plane
             var planeMaterial = new THREE.MeshBasicMaterial({ color: _context._options.bgColor });
-            _context._plane = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
-            _context._plane.overdraw = true;
-            _context._plane.rotation.x = Math.PI / 2;
-            _context._scene.add(_context._plane);
-            _context._objects.push( _context._plane );
+            _context._base = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
+            _context._base.overdraw = true;
+            _context._base.rotation.x = Math.PI / 2;
+            _context._scene.add(_context._base);
 
             // projector
             _context._projector = new THREE.Projector();
@@ -85,18 +77,11 @@
 
         function loadBaseMap(){
 
-            var img = new THREE.MeshBasicMaterial({ //CHANGED to MeshBasicMaterial
-                map:THREE.ImageUtils.loadTexture('http://ecn.t0.tiles.virtualearth.net/tiles/h02313010.jpeg?g=401')
-            });
-            img.map.needsUpdate = true; //ADDED
+            _context._tileLayers.push(new WXC.TileLayer(_context,{
+                "zIndex":1,
+                "rotation": _context._base.rotation
+            }));
 
-            var tile1 = new THREE.Mesh(new THREE.PlaneGeometry(256, 256), img);
-            tile1.overdraw = true;
-            tile1.rotation.copy(_context._plane.rotation);
-            tile1.position.z = 1;
-            _context._scene.add(tile1);
-
-            _context._tiles.push( tile1 );
         }
 
         function initEventPublishers(){
