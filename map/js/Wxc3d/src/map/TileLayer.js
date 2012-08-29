@@ -1,48 +1,47 @@
 /**
- * an interactive map tile layer
+ * an base interactive map tile layer class
  */
 (function(){
 
-    WXC.TileLayer = function (map, options) {
+    WXC.TileLayer = WXC.Base.extend({
 
-        var _context = this;
-        _context._map = map;
-        var _tiles = [];
-        var _options = $.extend({
+        defaults: {
             "zIndex":1,
             "rotation": Math.PI / 2
-        }, options);
+        },
 
-        init();
-        initEventSubscribers();
+        init: function(options, map){
 
-        function init(){
+            this._super(options);
 
-            _tiles.push( new WXC.Tile(_context, _options) );
+            this._map = map;
+            this._tiles = [];
 
-        }
+            this._tiles.push( new WXC.Tile(this._options, this) );
 
-        function moveBy(xy){
+            this.initEventSubscribers();
 
-            $.each(_tiles, function(index, tile) {
+        },
+
+        moveBy: function(xy){
+
+            $.each(this._tiles, function(index, tile) {
                 tile.moveBy(xy);
             });
 
-        }
+        },
 
-        function initEventSubscribers(){
+        initEventSubscribers: function(){
+
+            var _this = this;
 
             // MAP_MOVE
             $.subscribe(WXC.topics.MAP_MOVE, function($e, args){
-                moveBy(args.xy);
+                _this.moveBy(args.xy);
             });
-
 
         }
 
-
-
-    };
-
+    });
 
 })();

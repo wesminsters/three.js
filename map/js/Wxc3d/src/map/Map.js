@@ -3,111 +3,118 @@
  */
 (function(){
 
-    WXC.Map = function (options) {
+    WXC.Map = WXC.Base.extend({
 
-        var _context = this;
-
-        _context._options = $.extend({
+        defaults: {
             "$container": null,
             "bgColor": "0x000000"
-        }, options);
+        },
+        
+        init: function(options){
 
-        _context._renderer = null;
-        _context._camera = null;
-        _context._scene = null;
-        _context._projector = null;
-        _context._base = null;
-        _context._tileLayers = [];
+            this._super(options);
 
-        initScene();
-        initEventPublishers();
-        appLoop();
-        loadBaseMap();
+            this._renderer = null;
+            this._camera = null;
+            this._scene = null;
+            this._projector = null;
+            this._base = null;
+            this._tileLayers = [];
 
-        function draw(){
-            _context._renderer.render(_context._scene, _context._camera);
-        }
+            this.initScene();
+            this.initEventPublishers();
+            this.appLoop();
+            this.loadBaseMap();
 
-        function update(){
+        },
+        
+        draw: function(){
+            this._renderer.render(this._scene, this._camera);
+        },
+        
+        update: function(){
+            
+        },
+        
+        appLoop: function(){
 
-        }
-
-        function appLoop(){
-            requestAnimationFrame(appLoop);
-            update();
-            draw();
-        }
-
-        function initScene(){
+            window.requestAnimationFrame(this.appLoop.bind(this));
+            this.update();
+            this.draw();
+            
+        },
+        
+        initScene: function(){
 
             // renderer
-            _context._renderer = new THREE.WebGLRenderer();
-            _context._renderer.setSize(_context._options.$container.width(), _context._options.$container.height());
-            _context._options.$container.append(_context._renderer.domElement);
+            this._renderer = new THREE.WebGLRenderer();
+            this._renderer.setSize(this._options.$container.width(), this._options.$container.height());
+            this._options.$container.append(this._renderer.domElement);
 
             // camera
-            _context._camera = new THREE.PerspectiveCamera(45, _context._options.$container.width() / _context._options.$container.height(), 0.1, 5000);
-            _context._camera.position.x = 0;
-            _context._camera.position.y = -600;
-            _context._camera.position.z = 600;
-            _context._camera.lookAt(new THREE.Vector3( 0,0,0 ))
+            this._camera = new THREE.PerspectiveCamera(45, this._options.$container.width() / this._options.$container.height(), 0.1, 5000);
+            this._camera.position.x = 0;
+            this._camera.position.y = -600;
+            this._camera.position.z = 600;
+            this._camera.lookAt(new THREE.Vector3( 0,0,0 ))
 
             // scene
-            _context._scene = new THREE.Scene();
-            _context._scene.add(_context._camera);
+            this._scene = new THREE.Scene();
+            this._scene.add(this._camera);
 
             // plane
-            var planeMaterial = new THREE.MeshBasicMaterial({ color: _context._options.bgColor });
-            _context._base = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
-            _context._base.overdraw = true;
-            _context._base.rotation.x = Math.PI / 2;
-            _context._scene.add(_context._base);
+            var planeMaterial = new THREE.MeshBasicMaterial({ color: this._options.bgColor });
+            this._base = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
+            this._base.overdraw = true;
+            this._base.rotation.x = Math.PI / 2;
+            this._scene.add(this._base);
 
             // projector
-            _context._projector = new THREE.Projector();
+            this._projector = new THREE.Projector();
 
             // light
-            _context._light = new THREE.PointLight(0xFFFFFF);
-            _context._light.position.x = 0;
-            _context._light.position.y = 0;
-            _context._light.position.z = 1000;
-            _context._scene.add(_context._light);
+            this._light = new THREE.PointLight(0xFFFFFF);
+            this._light.position.x = 0;
+            this._light.position.y = 0;
+            this._light.position.z = 1000;
+            this._scene.add(this._light);
+        
+        },
 
-        }
+        loadBaseMap: function(){
 
-        function loadBaseMap(){
-
-            _context._tileLayers.push(new WXC.TileLayer(_context,{
+            this._tileLayers.push(new WXC.TileLayer({
                 "zIndex":1,
-                "rotation": _context._base.rotation
-            }));
+                "rotation": this._base.rotation
+            }, this));
 
-        }
+        },
 
-        function initEventPublishers(){
+        initEventPublishers: function(){
+
+            var _this = this;
 
             // MOUSE_MOVE
-            _context._renderer.domElement.addEventListener( 'mousemove', function(e){
+            this._renderer.domElement.addEventListener( 'mousemove', function(e){
                 e.preventDefault();
-                $.publish(WXC.topics.MOUSE_MOVE, {"e":e, "map":_context} );
+                $.publish(WXC.topics.MOUSE_MOVE, {"e":e, "map":_this} );
             }, false );
 
             // MOUSE_DOWN
-            _context._renderer.domElement.addEventListener( 'mousedown', function(e){
+            this._renderer.domElement.addEventListener( 'mousedown', function(e){
                 e.preventDefault();
-                $.publish(WXC.topics.MOUSE_DOWN, {"e":e, "map":_context} );
+                $.publish(WXC.topics.MOUSE_DOWN, {"e":e, "map":_this} );
             }, false );
 
             // MOUSE_UP
-            _context._renderer.domElement.addEventListener( 'mouseup', function(e){
+            this._renderer.domElement.addEventListener( 'mouseup', function(e){
                 e.preventDefault();
-                $.publish(WXC.topics.MOUSE_UP, {"e":e, "map":_context} );
+                $.publish(WXC.topics.MOUSE_UP, {"e":e, "map":_this} );
             }, false );
 
         }
-
-
-    };
+        
+    });
 
 
 })();
