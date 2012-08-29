@@ -2,6 +2,7 @@
  * load the Wxc3d javascript library
  */
 (function(){
+
     var basePath = "/map/js/Wxc3d/src/";
 
     var scripts = [
@@ -25,4 +26,5 @@
     for(var i = 0, n = scripts.length; i<n; i++){
         writeScript(basePath + scripts[i]);
     }
+
 })();

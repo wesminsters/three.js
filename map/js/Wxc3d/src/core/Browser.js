@@ -2,6 +2,7 @@
  * establish the client specific environment
  */
 (function() {
+
     var ua = navigator.userAgent.toLowerCase(),
         ie = !!window.ActiveXObject,
         webkit = ua.indexOf("webkit") != -1,
@@ -25,4 +26,5 @@
     //TODO replace ugly ua sniffing with feature detection
 
     WXC.Browser.touch = WXC.Browser.mobileWebkit || WXC.Browser.mobileOpera;
+
 })();
