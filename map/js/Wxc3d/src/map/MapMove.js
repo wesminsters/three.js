@@ -21,14 +21,14 @@
         _mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
         var vector = new THREE.Vector3( _mouse.x, _mouse.y, 0.5 );
-        map._projector.unprojectVector( vector, map._camera );
+        map.projector.unprojectVector( vector, map.camera );
 
-        var ray = new THREE.Ray( map._camera.position, vector.subSelf( map._camera.position ).normalize() );
+        var ray = new THREE.Ray( map.camera.position, vector.subSelf( map.camera.position ).normalize() );
 
 
         if ( _selected ) {
 
-            var intersects = ray.intersectObject( map._base );
+            var intersects = ray.intersectObject( map.base );
             if (!intersects[0]) { return; }
 
             _thisMoveDelta = intersects[ 0 ].point.subSelf( _offset );
@@ -52,13 +52,13 @@
 
         }
 
-        var intersects = ray.intersectObject( map._base );
+        var intersects = ray.intersectObject( map.base );
 
         if ( intersects.length > 0 ) {
 
             if ( _intersected != intersects[ 0 ].object ) {
                 _intersected = intersects[ 0 ].object;
-                map._base.position.copy( _intersected.position );
+                map.base.position.copy( _intersected.position );
             }
 
             map._options.$container[0].style.cursor = 'pointer';
@@ -82,18 +82,18 @@
         _thisMove = null;
 
         var vector = new THREE.Vector3( _mouse.x, _mouse.y, 0.5 );
-        map._projector.unprojectVector( vector, map._camera );
+        map.projector.unprojectVector( vector, map.camera );
 
-        var ray = new THREE.Ray( map._camera.position, vector.subSelf( map._camera.position ).normalize() );
+        var ray = new THREE.Ray( map.camera.position, vector.subSelf( map.camera.position ).normalize() );
 
-        var intersects = ray.intersectObject( map._base );
+        var intersects = ray.intersectObject( map.base );
 
         if ( intersects.length > 0 ) {
 
             _selected = intersects[ 0 ].object;
 
-            var intersects = ray.intersectObject( map._base );
-            _offset.copy( intersects[ 0 ].point ).subSelf( map._base.position );
+            var intersects = ray.intersectObject( map.base );
+            _offset.copy( intersects[ 0 ].point ).subSelf( map.base.position );
 
             map._options.$container[0].style.cursor = 'move';
 

@@ -12,10 +12,15 @@
         "core/PubSub.js",
         "core/Browser.js",
         "core/Base.js",
+        "geo/GeoMath.js",
+        "geo/LatLon.js",
+        "geometry/Point.js",
         "map/MapMove.js",
-        "map/TileLayer.js",
-        "map/Tile.js",
+        "map/tile/layers/TileLayer.js",
+        "map/tile/layers/BingTileLayer.js",
+        "map/tile/Tile.js",
         "map/Map.js"
+
     ];
 
     var writeScript = function(src){

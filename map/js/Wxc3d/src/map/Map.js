@@ -7,29 +7,44 @@
 
         defaults: {
             "$container": null,
-            "bgColor": "0x000000"
+            "bgColor": "0x000000",
+            "lookAt": null,
+            "zoom": 4,
+            "debug": false
         },
         
         init: function(options){
 
             this._super(options);
 
-            this._renderer = null;
-            this._camera = null;
-            this._scene = null;
-            this._projector = null;
-            this._base = null;
-            this._tileLayers = [];
+            this.renderer = null;
+            this.camera = null;
+            this.scene = null;
+            this.projector = null;
+            this.base = null;
+            this.baseMapLayer = null;
+            this.tileLayers = [];
+
+            this.latLon = null;
+            this.zoom = this._options.zoom;
 
             this.initScene();
             this.initEventPublishers();
             this.appLoop();
             this.loadBaseMap();
 
+            if (this._options.debug) {
+                this.debugMode();
+            }
+
+            if (this._options.lookAt){
+                this.lookAt(this._options.lookAt);
+            }
+
         },
         
         draw: function(){
-            this._renderer.render(this._scene, this._camera);
+            this.renderer.render(this.scene, this.camera);
         },
         
         update: function(){
@@ -43,50 +58,63 @@
             this.draw();
             
         },
+
+        debugMode: function(){
+
+            // show a red sphere at origin
+            var sphere = new THREE.Mesh(new THREE.SphereGeometry(10, 25, 25), new THREE.MeshLambertMaterial({
+                color: 0xff0000
+            }));
+            sphere.overdraw = true;
+            this.scene.add(sphere);
+
+        },
         
         initScene: function(){
 
             // renderer
-            this._renderer = new THREE.WebGLRenderer();
-            this._renderer.setSize(this._options.$container.width(), this._options.$container.height());
-            this._options.$container.append(this._renderer.domElement);
+            this.renderer = new THREE.WebGLRenderer();
+            this.renderer.setSize(this._options.$container.width(), this._options.$container.height());
+            this._options.$container.append(this.renderer.domElement);
 
             // camera
-            this._camera = new THREE.PerspectiveCamera(45, this._options.$container.width() / this._options.$container.height(), 0.1, 5000);
-            this._camera.position.x = 0;
-            this._camera.position.y = -600;
-            this._camera.position.z = 600;
-            this._camera.lookAt(new THREE.Vector3( 0,0,0 ))
+            this.camera = new THREE.PerspectiveCamera(45, this._options.$container.width() / this._options.$container.height(), 0.1, 5000);
+            this.camera.position.x = 0;
+            this.camera.position.y = -600;
+            this.camera.position.z = 600;
+            this.camera.lookAt(new THREE.Vector3( 0,0,0 ))
 
             // scene
-            this._scene = new THREE.Scene();
-            this._scene.add(this._camera);
+            this.scene = new THREE.Scene();
+            this.scene.add(this.camera);
 
             // plane
             var planeMaterial = new THREE.MeshBasicMaterial({ color: this._options.bgColor });
-            this._base = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
-            this._base.overdraw = true;
-            this._base.rotation.x = Math.PI / 2;
-            this._scene.add(this._base);
+            this.base = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
+            this.base.overdraw = true;
+            this.base.rotation.x = Math.PI / 2;
+            this.scene.add(this.base);
 
             // projector
-            this._projector = new THREE.Projector();
+            this.projector = new THREE.Projector();
 
             // light
             this._light = new THREE.PointLight(0xFFFFFF);
             this._light.position.x = 0;
             this._light.position.y = 0;
             this._light.position.z = 1000;
-            this._scene.add(this._light);
+            this.scene.add(this._light);
         
         },
 
         loadBaseMap: function(){
 
-            this._tileLayers.push(new WXC.TileLayer({
+            this.baseMapLayer = new WXC.BingTileLayer({
                 "zIndex":1,
-                "rotation": this._base.rotation
-            }, this));
+                "rotation": this.base.rotation
+            }, this);
+
+            this.tileLayers.push(this.baseMapLayer);
 
         },
 
@@ -95,22 +123,29 @@
             var _this = this;
 
             // MOUSE_MOVE
-            this._renderer.domElement.addEventListener( 'mousemove', function(e){
+            this.renderer.domElement.addEventListener( 'mousemove', function(e){
                 e.preventDefault();
                 $.publish(WXC.topics.MOUSE_MOVE, {"e":e, "map":_this} );
             }, false );
 
             // MOUSE_DOWN
-            this._renderer.domElement.addEventListener( 'mousedown', function(e){
+            this.renderer.domElement.addEventListener( 'mousedown', function(e){
                 e.preventDefault();
                 $.publish(WXC.topics.MOUSE_DOWN, {"e":e, "map":_this} );
             }, false );
 
             // MOUSE_UP
-            this._renderer.domElement.addEventListener( 'mouseup', function(e){
+            this.renderer.domElement.addEventListener( 'mouseup', function(e){
                 e.preventDefault();
                 $.publish(WXC.topics.MOUSE_UP, {"e":e, "map":_this} );
             }, false );
+
+        },
+
+        lookAt: function(latLon){
+
+            this.latLon = new WXC.LatLon(latLon.lat, latLon.lon);
+            $.publish(WXC.topics.LOOK_AT, this.latLon );
 
         }
         
