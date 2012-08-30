@@ -3,13 +3,29 @@
  */
 (function(){
 
-    var EarthRadius = 6378137;
-    var MinLatitude = -85.05112878;
-    var MaxLatitude = 85.05112878;
-    var MinLongitude = -180;
-    var MaxLongitude = 180;
+    var EARTH_RADIUS = 6378137;
+    var MIN_LATITUDE = -85.05112878;
+    var MAX_LATITUDE = 85.05112878;
+    var MIN_LONGITUDE = -180;
+    var MAX_LONGITUDE = 180;
+    var TILE_HEIGHT = 256;
+    var TILE_WIDTH = 256;
 
     WXC.GeoMath = {};
+
+    WXC.GeoMath.direction = {
+        "NORTH":"NORTH",
+        "EAST":"EAST",
+        "SOUTH":"SOUTH",
+        "WEST":"WEST"
+    }
+
+    WXC.GeoMath.neighborTileOffset = {
+        "NORTH":{ "pixelXY": new WXC.Point(0, -TILE_HEIGHT) },
+        "EAST":{ "pixelXY": new WXC.Point(-TILE_WIDTH, 0) },
+        "SOUTH":{ "pixelXY": new WXC.Point(0, TILE_HEIGHT) },
+        "WEST":{ "pixelXY": new WXC.Point(TILE_WIDTH, 0) }
+    }
 
     function Clip(n, minValue, maxValue)
     {
@@ -23,8 +39,8 @@
 
     WXC.GeoMath.latLon_to_PixelXY = function(latLon, zoom)
     {
-        var latitude = Clip(latLon.lat, MinLatitude, MaxLatitude);
-        var longitude = Clip(latLon.lon, MinLongitude, MaxLongitude);
+        var latitude = Clip(latLon.lat, MIN_LATITUDE, MAX_LATITUDE);
+        var longitude = Clip(latLon.lon, MIN_LONGITUDE, MAX_LONGITUDE);
 
         var x = (longitude + 180) / 360;
         var sinLatitude = Math.sin(latitude * Math.PI / 180);
@@ -67,7 +83,7 @@
         return quadKey;
     }
 
-    WXC.GeoMath.latLon_to_quadKey = function(latLon, zoom, pixelOffsetXY){
+    WXC.GeoMath.latLon_to_quadKey = function(latLon, zoom){
 
         var pixelXY = WXC.GeoMath.latLon_to_PixelXY(latLon, zoom);
         var tileXY = WXC.GeoMath.pixelXY_to_tileXY(pixelXY);
@@ -79,6 +95,46 @@
         }
 
         return quadKey;
+
+    }
+
+    WXC.GeoMath.latLon_to_tileCoords = function(latLon, zoom){
+
+        var pixelXY = WXC.GeoMath.latLon_to_PixelXY(latLon, zoom);
+        var tileCoords = WXC.GeoMath.pixelXY_to_tileCoords(pixelXY, zoom);
+
+        return tileCoords;
+
+    }
+
+    WXC.GeoMath.pixelXY_to_tileCoords = function(pixelXY, zoom){
+
+        var tileXY = WXC.GeoMath.pixelXY_to_tileXY(pixelXY);
+        var quadKey = WXC.GeoMath.tileXY_to_quadKey(tileXY, zoom);
+        var pixelOffsetXY = new WXC.Point(pixelXY.x % 256, pixelXY.y % 256);
+
+        var tileCoords = {
+            //"latLon" : latLon,
+            "zoom": zoom,
+            "pixelXY": pixelXY,
+            "tileXY": tileXY,
+            "pixelOffsetXY": pixelOffsetXY,
+            "quadKey": quadKey
+        }
+
+        return tileCoords;
+
+    }
+
+    WXC.GeoMath.getNeighborTileCoords = function(tileCoords, direction){
+
+        var directionOffset = WXC.GeoMath.neighborTileOffset[direction];
+
+        var pixelXY = new WXC.Point(tileCoords.pixelXY.x + directionOffset.pixelXY.x, tileCoords.pixelXY.y + directionOffset.pixelXY.y);
+        var tileCoords = WXC.GeoMath.pixelXY_to_tileCoords(pixelXY, tileCoords.zoom);
+        tileCoords.pixelOffsetXY.x -= directionOffset.pixelXY.x;
+        tileCoords.pixelOffsetXY.y -= directionOffset.pixelXY.y;
+        return tileCoords;
 
     }
 

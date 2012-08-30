@@ -15,7 +15,7 @@
             this._super(options);
 
             this.map = map;
-            this.tiles = [];
+            this.tiles = {};
 
             this.initEventSubscribers();
 
@@ -30,24 +30,46 @@
         },
 
         lookAt: function(latLon){
-
-            var tile = this.getCenterTile(latLon);
-            this.tiles.push(tile);
+            this.populate(latLon);
         },
 
-        getCenterTile: function(latLon){
+        populate: function(latLon){
 
-            var pixelOffset = new WXC.Point();
-            var quadKey = WXC.GeoMath.latLon_to_quadKey(latLon, this.map.zoom, pixelOffset);
+            var _this = this;
 
-            var tileOptions = $.extend({}, this._options, {
-                "quadKey": quadKey,
-                "pixelOffset": pixelOffset
+            // add the center tile
+            var centerTileCoords = WXC.GeoMath.latLon_to_tileCoords(latLon, this.map.zoom);
+            this.addTile(centerTileCoords);
+
+            // add neighbor tiles
+            var neighborTileCoords = [];
+            neighborTileCoords.push( WXC.GeoMath.getNeighborTileCoords(centerTileCoords, WXC.GeoMath.direction.NORTH) );
+            neighborTileCoords.push( WXC.GeoMath.getNeighborTileCoords(centerTileCoords, WXC.GeoMath.direction.EAST) );
+            neighborTileCoords.push( WXC.GeoMath.getNeighborTileCoords(centerTileCoords, WXC.GeoMath.direction.SOUTH) );
+            neighborTileCoords.push( WXC.GeoMath.getNeighborTileCoords(centerTileCoords, WXC.GeoMath.direction.WEST) );
+
+            $.each(neighborTileCoords, function(index, tileCoords) {
+                _this.addTile(tileCoords);
             });
 
-            var tile = new WXC.Tile(tileOptions, this);
+        },
 
-            return tile;
+        tileExists: function(tileCoords){
+            var found = this.tiles[tileCoords.quadKey];
+            return found;
+        },
+
+        addTile: function(tileCoords){
+
+            if (this.tileExists(tileCoords)) { return; }
+
+            var tileOptions = {
+                "zIndex": this._options.zIndex,
+                "rotation": this._options.rotation,
+                "coords": tileCoords
+            };
+
+            new WXC.Tile(tileOptions, this);
 
         },
 
