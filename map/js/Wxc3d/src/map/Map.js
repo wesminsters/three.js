@@ -90,7 +90,7 @@
 
             // plane
             var planeMaterial = new THREE.MeshBasicMaterial({ color: this._options.bgColor });
-            this.base = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), planeMaterial);
+            this.base = new THREE.Mesh(new THREE.PlaneGeometry(3600, 2400), planeMaterial);
             this.base.overdraw = true;
             this.base.rotation.x = Math.PI / 2;
             this.scene.add(this.base);

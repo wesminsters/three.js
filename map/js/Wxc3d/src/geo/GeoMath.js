@@ -22,9 +22,9 @@
 
     WXC.GeoMath.neighborTileOffset = {
         "NORTH":{ "pixelXY": new WXC.Point(0, -TILE_HEIGHT) },
-        "EAST":{ "pixelXY": new WXC.Point(-TILE_WIDTH, 0) },
+        "EAST":{ "pixelXY": new WXC.Point(TILE_WIDTH, 0) },
         "SOUTH":{ "pixelXY": new WXC.Point(0, TILE_HEIGHT) },
-        "WEST":{ "pixelXY": new WXC.Point(TILE_WIDTH, 0) }
+        "WEST":{ "pixelXY": new WXC.Point(-TILE_WIDTH, 0) }
     }
 
     function Clip(n, minValue, maxValue)
@@ -129,11 +129,8 @@
     WXC.GeoMath.getNeighborTileCoords = function(tileCoords, direction){
 
         var directionOffset = WXC.GeoMath.neighborTileOffset[direction];
-
         var pixelXY = new WXC.Point(tileCoords.pixelXY.x + directionOffset.pixelXY.x, tileCoords.pixelXY.y + directionOffset.pixelXY.y);
         var tileCoords = WXC.GeoMath.pixelXY_to_tileCoords(pixelXY, tileCoords.zoom);
-        tileCoords.pixelOffsetXY.x -= directionOffset.pixelXY.x;
-        tileCoords.pixelOffsetXY.y -= directionOffset.pixelXY.y;
         return tileCoords;
 
     }
