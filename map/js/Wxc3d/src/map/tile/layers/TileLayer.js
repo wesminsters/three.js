@@ -16,6 +16,7 @@
 
             this.map = map;
             this.tiles = {};
+            this.movedBy = new WXC.Point();
 
             this.initEventSubscribers();
 
@@ -27,6 +28,9 @@
                 tile.moveBy(xy);
             });
 
+            this.movedBy.x += xy.x;
+            this.movedBy.y += xy.y;
+
         },
 
         lookAt: function(latLon){
@@ -35,17 +39,23 @@
 
         populate: function(latLon){
 
-            // add the center tile
-            var centerTileCoords = WXC.GeoMath.latLon_to_tileCoords(latLon, this.map.zoom);
-            centerTileCoords.tileXY = $.extend({}, centerTileCoords.pixelOffsetXY);
+            if (latLon){
 
+                // add the center tile
+                var centerTileCoords = WXC.GeoMath.latLon_to_tileCoords(latLon, this.map.zoom);
+                centerTileCoords.tileXY = $.extend({}, centerTileCoords.pixelOffsetXY);
 
-            this.addTile(centerTileCoords);
-            this.addNeighborTiles(centerTileCoords, true);
+                this.targetTile = this.addTile(centerTileCoords);
+                this.addNeighborTiles(this.targetTile, false);
+
+            }
+            else{
+                this.addNeighborTiles(this.targetTile, false);
+            }
 
         },
 
-        addNeighborTiles: function(tileCoords, recurse){
+        addNeighborTiles: function(tile, recurse){
 
             //if (!this.counter){ this.counter = 0; }
             //if (++this.counter > 5) { return; }
@@ -59,12 +69,12 @@
             function getNeighborTileCoords(direction){
 
                 var offset = WXC.GeoMath.neighborTileOffset[direction];
-                var coords = WXC.GeoMath.getNeighborTileCoords(tileCoords, direction);
+                var coords = WXC.GeoMath.getNeighborTileCoords(tile._options.coords, direction);
 
                 // position relative to the parent neighbor position
                 coords.tileXY = new WXC.Point();
-                coords.tileXY.x = tileCoords.tileXY.x - offset.pixelXY.x;
-                coords.tileXY.y = tileCoords.tileXY.y - offset.pixelXY.y;
+                coords.tileXY.x = tile._options.coords.tileXY.x - offset.pixelXY.x;
+                coords.tileXY.y = tile._options.coords.tileXY.y - offset.pixelXY.y;
 
                 return coords;
             }
@@ -81,17 +91,24 @@
 
             // add the tiles to the scene
             $.each(neighborTileCoords, function(index, coords) {
-                var tile =  _this.addTile(coords);
-                if (!tile) { return true; }
+
+                var tile = _this.getTile(coords.quadKey);
+
+                if (!tile){
+
+                    tile = _this.addTile(coords);
+                }
+
                 added.push(tile);
+
             });
 
             // recurse neighbors of newly added tiles
             if (recurse){
 
                 $.each(added, function(index, tile) {
-                    if (!tile.isInView()) { return true; }
-                    _this.addNeighborTiles(tile._options.coords, true);
+                    if (!tile.isInViewport()) { return true; }
+                    _this.addNeighborTiles(tile, true);
                 });
 
             }
@@ -100,7 +117,11 @@
 
         addTile: function(tileCoords){
 
-            if (this.tileExists(tileCoords)) { return null; }
+            // does the tile already exist
+            if (this.getTile(tileCoords.quadKey)) { return null; }
+
+            tileCoords.tileXY.x -= this.movedBy.x;
+            tileCoords.tileXY.y += this.movedBy.y;
 
             var tileOptions = {
                 "zIndex": this._options.zIndex,
@@ -112,9 +133,23 @@
 
         },
 
-        tileExists: function(tileCoords){
-            var found = this.tiles[tileCoords.quadKey];
-            return found;
+        getTile: function(quadKey){
+            return this.tiles[quadKey];
+        },
+
+        removeCulled: function(){
+
+            var _this = this;
+            var tiles = $.extend({}, this.tiles);
+
+            $.each(tiles, function(index, tile) {
+
+                if (!tile.isInViewport()) {
+                    if (tile == _this.targetTile) { return true; }  // dont ever remove the target tile
+                    tile.remove();
+                }
+
+            });
         },
 
         initEventSubscribers: function(){
@@ -124,6 +159,8 @@
             // MAP_MOVE
             $.subscribe(WXC.topics.MAP_MOVE, function($e, args){
                 _this.moveBy(args.xy);
+                _this.removeCulled();
+                _this.populate()
             });
 
             // LOOK_AT

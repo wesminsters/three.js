@@ -56,17 +56,27 @@
             window.requestAnimationFrame(this.appLoop.bind(this));
             this.update();
             this.draw();
+
+            if (this.stats){
+                this.stats.update();
+            }
             
         },
 
         debugMode: function(){
 
             // show a red sphere at origin
-            var sphere = new THREE.Mesh(new THREE.SphereGeometry(10, 25, 25), new THREE.MeshLambertMaterial({
+            var sphere = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 20), new THREE.MeshLambertMaterial({
                 color: 0xff0000
             }));
             sphere.overdraw = true;
             this.scene.add(sphere);
+
+            // show stats
+            this.stats = new Stats();
+            this.stats.domElement.style.position = 'absolute';
+            this.stats.domElement.style.top = '0px';
+            this._options.$container.append( this.stats.domElement );
 
         },
         
@@ -78,11 +88,17 @@
             this._options.$container.append(this.renderer.domElement);
 
             // camera
-            this.camera = new THREE.PerspectiveCamera(45, this._options.$container.width() / this._options.$container.height(), 0.1, 5000);
-            this.camera.position.x = 0;
-            this.camera.position.y = -600;
-            this.camera.position.z = 600;
-            this.camera.lookAt(new THREE.Vector3( 0,0,0 ))
+
+            var frustum = {
+                "angle": 30,
+                "aspect": this._options.$container.width() / this._options.$container.height(),
+                "near": 400,
+                "far": 1600
+            }
+
+            this.camera = new THREE.PerspectiveCamera(frustum.angle, frustum.aspect, frustum.near, frustum.far);
+            this.camera.position = new THREE.Vector3(0, -600, 700);
+            this.camera.lookAt(new THREE.Vector3( 0,0,0 ));
 
             // scene
             this.scene = new THREE.Scene();
