@@ -10,7 +10,8 @@
             "bgColor": "0x000000",
             "lookAt": null,
             "zoom": 4,
-            "debug": false
+            "debug": false,
+            "fps": null
         },
         
         init: function(options){
@@ -24,6 +25,7 @@
             this.base = null;
             this.baseMapLayer = null;
             this.tileLayers = [];
+            this.loopStarted = false;
 
             this.latLon = null;
             this.zoom = this._options.zoom;
@@ -48,12 +50,27 @@
         },
         
         update: function(){
-            
+            $.publish(WXC.topics.APP_LOOP_UPDATE, {"map":this} );
         },
         
         appLoop: function(){
 
-            window.requestAnimationFrame(this.appLoop.bind(this));
+            if (this._options.fps){
+                // custom fps
+                if (!this.loopStarted){
+                    var _this = this;
+                    window.setInterval(function() {
+                        window.requestAnimationFrame(_this.appLoop.bind(_this));
+                    }, (1000/this._options.fps));
+                    this.loopStarted = true;
+                    return;
+                }
+            }
+            else{
+                // wide open fps
+                window.requestAnimationFrame(this.appLoop.bind(this));
+            }
+
             this.update();
             this.draw();
 
@@ -93,11 +110,11 @@
                 "angle": 30,
                 "aspect": this._options.$container.width() / this._options.$container.height(),
                 "near": 400,
-                "far": 1600
+                "far": 2400
             }
 
             this.camera = new THREE.PerspectiveCamera(frustum.angle, frustum.aspect, frustum.near, frustum.far);
-            this.camera.position = new THREE.Vector3(0, -600, 700);
+            this.camera.position = new THREE.Vector3(0, -650, 1200);
             this.camera.lookAt(new THREE.Vector3( 0,0,0 ));
 
             // scene

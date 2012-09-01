@@ -20,16 +20,18 @@
 
             this.tileLayer = tileLayer;
             this.map = this.tileLayer.map;
-            this.mesh;
+            this.mesh = null;
+            this.texture = null;
 
-            var url = this.tileLayer.getTileUrl({"quadKey": this._options.coords.quadKey});
+        },
 
-            var img = new THREE.MeshBasicMaterial({
-                map:THREE.ImageUtils.loadTexture(url)
-            });
-            img.map.needsUpdate = true;
+        add: function(){
 
-            this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), img);
+            var plane = new THREE.PlaneGeometry(WIDTH, HEIGHT);
+            //plane.dynamic = true;
+
+            this.mesh = new THREE.Mesh(plane);
+            //this.mesh.dynamic = true;
             this.mesh.overdraw = true;
             this.mesh.rotation.copy(this._options.rotation);
             this.mesh.position.z = this._options.zIndex;
@@ -38,7 +40,28 @@
             this.mesh.position.y = (-HEIGHT/2) + this._options.coords.tileXY.y;
 
             this.map.scene.add(this.mesh);
-            this.tileLayer.tiles[this._options.coords.quadKey] = this;
+
+            // only add the tile if the plane is within the viewport
+            if (this.isInViewport()){
+                var material = this.getMaterial();
+                this.texture = material.map;
+                this.mesh.material = material;
+                this.tileLayer.tiles[this._options.coords.quadKey] = this;
+                console.log("add tile " + this._options.coords.quadKey);
+                return this;
+            }
+
+            this.remove();
+            return null;
+
+        },
+
+        getMaterial: function(){
+
+            var url = this.tileLayer.getTileUrl({"quadKey": this._options.coords.quadKey});
+            var material = new THREE.MeshBasicMaterial({ map:THREE.ImageUtils.loadTexture(url) });
+            //material.map.needsUpdate = true;
+            return material;
 
         },
 
@@ -73,24 +96,25 @@
             this.map.camera.updateMatrixWorld(); // make sure camera's world matrix is updated
             this.map.camera.matrixWorldInverse.getInverse( this.map.camera.matrixWorld );
 
+            var frustum = new THREE.Frustum;
+            frustum.setFromMatrix( new THREE.Matrix4().multiply( this.map.camera.projectionMatrix, this.map.camera.matrixWorldInverse ) );
+
             this.mesh.updateMatrix(); // make sure plane's local matrix is updated
             this.mesh.updateMatrixWorld(); // make sure plane's world matrix is updated
 
-            var frustum = new THREE.Frustum;
-            frustum.setFromMatrix( new THREE.Matrix4().multiply( this.map.camera.projectionMatrix, this.map.camera.matrixWorldInverse ) );
             return frustum.contains( this.mesh );
 
         },
 
         remove: function(){
 
-            console.log("remove tile " + this._options.coords.quadKey);
-            delete this.tileLayer.tiles[this._options.coords.quadKey];  // remove from parent tile list
             this.map.scene.remove(this.mesh);
-            this.map.renderer.deallocateObject(this.mesh) // remove the mesh handle from the renderer
-
-            // todo: remove texture handle from the renderer
-            //this.map.renderer.deallocateTexture(this.texture) // remove texture handle from the renderer
+            if(this.tileLayer.tiles[this._options.coords.quadKey]) {
+                delete this.tileLayer.tiles[this._options.coords.quadKey];  // remove from parent tile list
+                console.log("remove tile " + this._options.coords.quadKey);
+            }
+            if (this.mesh) { this.map.renderer.deallocateObject(this.mesh) } // remove the mesh handle from the renderer
+            if (this.texture) { this.map.renderer.deallocateTexture(this.texture) } // remove texture handle from the renderer
 
         }
 

@@ -41,77 +41,59 @@
 
             if (latLon){
 
+                this.clear();
+
                 // add the center tile
                 var centerTileCoords = WXC.GeoMath.latLon_to_tileCoords(latLon, this.map.zoom);
                 centerTileCoords.tileXY = $.extend({}, centerTileCoords.pixelOffsetXY);
 
                 this.targetTile = this.addTile(centerTileCoords);
-                this.addNeighborTiles(this.targetTile, false);
+
+                this.fillFromTargetOut();
 
             }
             else{
-                this.addNeighborTiles(this.targetTile, false);
+                this.fillMissingSpaces();
             }
 
         },
 
-        addNeighborTiles: function(tile, recurse){
+        fillFromTargetOut: function(){
+            this.addNeighborTiles(this.targetTile, true);
+        },
 
-            //if (!this.counter){ this.counter = 0; }
-            //if (++this.counter > 5) { return; }
+        fillMissingSpaces: function(){
+
+
+
+        },
+
+        addNeighborTiles: function(targetTile, recurse){
 
             var _this = this;
             var added = [];
 
-            // get neighbor tile coordinates
-            var neighborTileCoords = [];
-
-            function getNeighborTileCoords(direction){
-
-                var offset = WXC.GeoMath.neighborTileOffset[direction];
-                var coords = WXC.GeoMath.getNeighborTileCoords(tile._options.coords, direction);
-
-                // position relative to the parent neighbor position
-                coords.tileXY = new WXC.Point();
-                coords.tileXY.x = tile._options.coords.tileXY.x - offset.pixelXY.x;
-                coords.tileXY.y = tile._options.coords.tileXY.y - offset.pixelXY.y;
-
-                return coords;
-            }
-
-            var northCoords = getNeighborTileCoords(WXC.GeoMath.direction.NORTH);
-            var eastCoords = getNeighborTileCoords(WXC.GeoMath.direction.EAST);
-            var southCoords = getNeighborTileCoords(WXC.GeoMath.direction.SOUTH);
-            var westCoords = getNeighborTileCoords(WXC.GeoMath.direction.WEST);
-
-            neighborTileCoords.push(northCoords);
-            neighborTileCoords.push(eastCoords);
-            neighborTileCoords.push(southCoords);
-            neighborTileCoords.push(westCoords);
+            var neighborTileCoords = this.getNeighborTileCoords(targetTile);
 
             // add the tiles to the scene
             $.each(neighborTileCoords, function(index, coords) {
 
-                var tile = _this.getTile(coords.quadKey);
+                if (!_this.tileExists(coords.quadKey)){
 
-                if (!tile){
-
-                    tile = _this.addTile(coords);
+                    var newTile = _this.addTile(coords);
+                    if (!newTile) { return true; }
+                    added.push(newTile);
                 }
-
-                added.push(tile);
 
             });
 
+            if (!recurse) { return; }
+
             // recurse neighbors of newly added tiles
-            if (recurse){
-
-                $.each(added, function(index, tile) {
-                    if (!tile.isInViewport()) { return true; }
-                    _this.addNeighborTiles(tile, true);
-                });
-
-            }
+            $.each(added, function(index, tile) {
+                if (!tile.isInViewport()) { return true; }
+                _this.addNeighborTiles(tile, true);
+            });
 
         },
 
@@ -129,12 +111,58 @@
                 "coords": tileCoords
             };
 
-            return new WXC.Tile(tileOptions, this);
+            var tile = new WXC.Tile(tileOptions, this);
+            var added = tile.add();
 
+            return added;
+        },
+
+        getNeighborTileCoords: function(targetTile){
+
+            // get neighbor tile coordinates
+            var neighborTileCoords = [];
+
+            function getCoords(direction){
+
+                var offset = WXC.GeoMath.neighborTileOffset[direction];
+                var coords = WXC.GeoMath.getNeighborTileCoords(targetTile._options.coords, direction);
+
+                // position relative to the parent neighbor position
+                coords.tileXY = new WXC.Point();
+                coords.tileXY.x = targetTile._options.coords.tileXY.x - offset.pixelXY.x;
+                coords.tileXY.y = targetTile._options.coords.tileXY.y - offset.pixelXY.y;
+
+                return coords;
+            }
+
+            var northCoords = getCoords(WXC.GeoMath.direction.NORTH);
+            var eastCoords = getCoords(WXC.GeoMath.direction.EAST);
+            var southCoords = getCoords(WXC.GeoMath.direction.SOUTH);
+            var westCoords = getCoords(WXC.GeoMath.direction.WEST);
+
+            neighborTileCoords.push(northCoords);
+            neighborTileCoords.push(eastCoords);
+            neighborTileCoords.push(southCoords);
+            neighborTileCoords.push(westCoords);
+
+            return neighborTileCoords;
+
+        },
+
+        tileExists: function(quadKey){
+            return !!this.getTile(quadKey);
         },
 
         getTile: function(quadKey){
             return this.tiles[quadKey];
+        },
+
+        clear: function(){
+
+            $.each(this.tiles, function(key, tile) {
+                tile.remove();
+            });
+
         },
 
         removeCulled: function(){
@@ -142,7 +170,7 @@
             var _this = this;
             var tiles = $.extend({}, this.tiles);
 
-            $.each(tiles, function(index, tile) {
+            $.each(tiles, function(key, tile) {
 
                 if (!tile.isInViewport()) {
                     if (tile == _this.targetTile) { return true; }  // dont ever remove the target tile
@@ -160,13 +188,18 @@
             $.subscribe(WXC.topics.MAP_MOVE, function($e, args){
                 _this.moveBy(args.xy);
                 _this.removeCulled();
-                _this.populate()
+                _this.populate();
             });
 
             // LOOK_AT
             $.subscribe(WXC.topics.LOOK_AT, function($e, latLon){
                 _this.lookAt(latLon);
             });
+
+            // APP_LOOP_UPDATE
+            //$.subscribe(WXC.topics.APP_LOOP_UPDATE, function($e, map){
+            //    _this.populate();
+            //});
 
         },
 
