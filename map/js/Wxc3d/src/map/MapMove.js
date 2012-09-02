@@ -90,6 +90,10 @@
 
         if ( intersects.length > 0 ) {
 
+            $.publish(WXC.topics.MAP_MOVE_START, {
+                "map":map
+            });
+
             _selected = intersects[ 0 ].object;
 
             var intersects = ray.intersectObject( map.base );
@@ -111,6 +115,11 @@
         _thisMove = null;
 
         if ( _intersected ) {
+
+            $.publish(WXC.topics.MAP_MOVE_END, {
+                "map":map
+            });
+
             _selected = null;
         }
 

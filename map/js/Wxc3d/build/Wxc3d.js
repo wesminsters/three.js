@@ -18,6 +18,7 @@
         "map/MapMove.js",
         "map/tile/layers/TileLayer.js",
         "map/tile/layers/BingTileLayer.js",
+        "map/tile/layers/CurrentRadarTileLayer.js",
         "map/tile/Tile.js",
         "map/Map.js",
         "util/stats.js"

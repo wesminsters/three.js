@@ -23,7 +23,6 @@
             this.scene = null;
             this.projector = null;
             this.base = null;
-            this.baseMapLayer = null;
             this.tileLayers = [];
             this.loopStarted = false;
 
@@ -32,8 +31,8 @@
 
             this.initScene();
             this.initEventPublishers();
+            this.initEventSubscribers();
             this.appLoop();
-            this.loadBaseMap();
 
             if (this._options.debug) {
                 this.debugMode();
@@ -140,14 +139,10 @@
         
         },
 
-        loadBaseMap: function(){
+        addLayer: function(layer){
 
-            this.baseMapLayer = new WXC.BingTileLayer({
-                "zIndex":1,
-                "rotation": this.base.rotation
-            }, this);
-
-            this.tileLayers.push(this.baseMapLayer);
+            layer._options.rotation = this.base.rotation;
+            this.tileLayers.push(layer);
 
         },
 
@@ -172,6 +167,21 @@
                 e.preventDefault();
                 $.publish(WXC.topics.MOUSE_UP, {"e":e, "map":_this} );
             }, false );
+
+        },
+
+        initEventSubscribers: function(){
+
+            var _this = this;
+
+            // MESSAGE
+            $.subscribe(WXC.topics.MESSAGE, function($e, args){
+                if (_this._options.debug){
+                    console.log(args.text);
+                    //console.log(Object.keys(_this.tileLayers[0].tiles).length);   // show tile count
+                }
+            });
+
 
         },
 

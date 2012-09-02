@@ -34,25 +34,44 @@
             //this.mesh.dynamic = true;
             this.mesh.overdraw = true;
             this.mesh.rotation.copy(this._options.rotation);
-            this.mesh.position.z = this._options.zIndex;
-
-            this.mesh.position.x = (WIDTH/2) - this._options.coords.tileXY.x;
-            this.mesh.position.y = (-HEIGHT/2) + this._options.coords.tileXY.y;
+            this.setMeshPosition();
 
             this.map.scene.add(this.mesh);
+            this.tileLayer.tiles[this._options.coords.quadKey] = this;
 
             // only add the tile if the plane is within the viewport
             if (this.isInViewport()){
                 var material = this.getMaterial();
                 this.texture = material.map;
                 this.mesh.material = material;
-                this.tileLayer.tiles[this._options.coords.quadKey] = this;
-                console.log("add tile " + this._options.coords.quadKey);
+                $.publish(WXC.topics.MESSAGE, {"text": "add tile " + this._options.coords.quadKey} );
                 return this;
             }
 
             this.remove();
             return null;
+
+        },
+
+        setMeshPosition: function(){
+
+            if (this.tileLayer.targetTile){
+
+                this.mesh.position.copy(this.tileLayer.targetTile.mesh.position);
+
+                var xDiffFromTarget = this.tileLayer.targetTile._options.coords.pixelXY.x - this._options.coords.pixelXY.x;
+                var yDiffFromTarget = this.tileLayer.targetTile._options.coords.pixelXY.y - this._options.coords.pixelXY.y;
+
+                this.mesh.position.x -= xDiffFromTarget;
+                this.mesh.position.y += yDiffFromTarget;
+
+
+            }
+            else{
+                this.mesh.position.z = this._options.zIndex;
+                this.mesh.position.x = (WIDTH/2) - this._options.coords.pixelOffsetXY.x;
+                this.mesh.position.y = (-HEIGHT/2) + this._options.coords.pixelOffsetXY.y;
+            }
 
         },
 
@@ -111,7 +130,11 @@
             this.map.scene.remove(this.mesh);
             if(this.tileLayer.tiles[this._options.coords.quadKey]) {
                 delete this.tileLayer.tiles[this._options.coords.quadKey];  // remove from parent tile list
-                console.log("remove tile " + this._options.coords.quadKey);
+
+                if (this.texture){
+                    $.publish(WXC.topics.MESSAGE, {"text": "remove tile " + this._options.coords.quadKey} );
+                }
+
             }
             if (this.mesh) { this.map.renderer.deallocateObject(this.mesh) } // remove the mesh handle from the renderer
             if (this.texture) { this.map.renderer.deallocateTexture(this.texture) } // remove texture handle from the renderer

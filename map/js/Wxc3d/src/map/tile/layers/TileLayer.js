@@ -16,7 +16,7 @@
 
             this.map = map;
             this.tiles = {};
-            this.movedBy = new WXC.Point();
+            this.targetTile = null;
 
             this.initEventSubscribers();
 
@@ -28,16 +28,9 @@
                 tile.moveBy(xy);
             });
 
-            this.movedBy.x += xy.x;
-            this.movedBy.y += xy.y;
-
         },
 
         lookAt: function(latLon){
-            this.populate(latLon);
-        },
-
-        populate: function(latLon){
 
             if (latLon){
 
@@ -45,26 +38,44 @@
 
                 // add the center tile
                 var centerTileCoords = WXC.GeoMath.latLon_to_tileCoords(latLon, this.map.zoom);
-                centerTileCoords.tileXY = $.extend({}, centerTileCoords.pixelOffsetXY);
-
                 this.targetTile = this.addTile(centerTileCoords);
 
-                this.fillFromTargetOut();
+                this.addNeighborTiles(this.targetTile, true);
 
-            }
-            else{
-                this.fillMissingSpaces();
             }
 
         },
 
-        fillFromTargetOut: function(){
-            this.addNeighborTiles(this.targetTile, true);
-        },
+        fillMissingSpaces: function(recurse){
 
-        fillMissingSpaces: function(){
+            var _this = this;
+            var tiles = $.extend({}, this.tiles);
+            var checked = {};
+            var added = [];
+
+            $.each(tiles, function(key, tile){
+
+                var neighborTileCoords = _this.getNeighborTileCoords(tile);
+
+                $.each(neighborTileCoords, function(index, coords){
+
+                    if (checked[coords.quadKey]) { return true; };  // already checked this one?
+                    if (tiles[coords.quadKey]) { return true; }; // already exists in the tileset?
+
+                    var tile = _this.addTile(coords);
+
+                    if (tile){
+                        added.push(tile);
+                    }
+
+                })
 
 
+            })
+
+            if (recurse && added.length > 0){
+                _this.fillMissingSpaces(true);
+            }
 
         },
 
@@ -97,26 +108,6 @@
 
         },
 
-        addTile: function(tileCoords){
-
-            // does the tile already exist
-            if (this.getTile(tileCoords.quadKey)) { return null; }
-
-            tileCoords.tileXY.x -= this.movedBy.x;
-            tileCoords.tileXY.y += this.movedBy.y;
-
-            var tileOptions = {
-                "zIndex": this._options.zIndex,
-                "rotation": this._options.rotation,
-                "coords": tileCoords
-            };
-
-            var tile = new WXC.Tile(tileOptions, this);
-            var added = tile.add();
-
-            return added;
-        },
-
         getNeighborTileCoords: function(targetTile){
 
             // get neighbor tile coordinates
@@ -126,12 +117,6 @@
 
                 var offset = WXC.GeoMath.neighborTileOffset[direction];
                 var coords = WXC.GeoMath.getNeighborTileCoords(targetTile._options.coords, direction);
-
-                // position relative to the parent neighbor position
-                coords.tileXY = new WXC.Point();
-                coords.tileXY.x = targetTile._options.coords.tileXY.x - offset.pixelXY.x;
-                coords.tileXY.y = targetTile._options.coords.tileXY.y - offset.pixelXY.y;
-
                 return coords;
             }
 
@@ -147,6 +132,23 @@
 
             return neighborTileCoords;
 
+        },
+
+        addTile: function(tileCoords){
+
+            // does the tile already exist
+            if (this.getTile(tileCoords.quadKey)) { return null; }
+
+            var tileOptions = {
+                "zIndex": this._options.zIndex,
+                "rotation": this._options.rotation,
+                "coords": tileCoords
+            };
+
+            var tile = new WXC.Tile(tileOptions, this);
+            var added = tile.add();
+
+            return added;
         },
 
         tileExists: function(quadKey){
@@ -184,11 +186,22 @@
 
             var _this = this;
 
+            // MAP_MOVE_START
+            //$.subscribe(WXC.topics.MAP_MOVE_START, function($e, args){
+            //
+            //});
+
             // MAP_MOVE
             $.subscribe(WXC.topics.MAP_MOVE, function($e, args){
                 _this.moveBy(args.xy);
                 _this.removeCulled();
-                _this.populate();
+                _this.fillMissingSpaces(false);
+            });
+
+            // MAP_MOVE_END
+            $.subscribe(WXC.topics.MAP_MOVE_END, function($e, args){
+                _this.removeCulled();
+                _this.fillMissingSpaces(true);
             });
 
             // LOOK_AT
